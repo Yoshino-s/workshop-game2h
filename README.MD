@@ -25,9 +25,9 @@ console.log(getNum(c));
 
 ---
 
-环境准备：[点击这里](/INTRODUCTION/ENVIRONMENT.md)  
+环境准备：[点击这里](/INTRODUCTION/ENVIRONMENT.MD)  
 
-VS Code插件：[点击这里](/INTRODUCTION/ENVIRONMENT.md)  
+VS Code插件：[点击这里](/INTRODUCTION/ENVIRONMENT.MD)  
 
 ---
 
