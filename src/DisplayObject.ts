@@ -1,10 +1,7 @@
-import WebGLConstants from "./WebGLConstants";
+import Texture from "./Texture";
 
 export default class DisplayObject {
-  private texture: WebGLTexture;
-  private img: HTMLImageElement;
-  gl: WebGLRenderingContext;
-
+  texture: Texture;
   position = {
     x: 0, y: 0, z: 0,
   };
@@ -13,28 +10,25 @@ export default class DisplayObject {
   };
   width = 0;
   height = 0;
+  scale = 1;
   absolute = false;
   hidden = false;
+  static = true;
+  final = false;
+  inViewsight: false | { width: number; height: number; destroy?: boolean} = false;
+  private _velocity: {
+    x: (t: number, d: number) => number;
+    y: (t: number, d: number) => number;
+  } = {
+    x:()=> 0,
+    y:()=> 0,
+  }
   children = new Set<DisplayObject>();
   parent?: DisplayObject;
-  constructor(gl: WebGLRenderingContext, img: HTMLImageElement) {
-    this.gl = gl;
-    const texture = gl.createTexture();
-    if (texture === null) {
-      throw Error("Cannot create texture.");
-    }
+  constructor(texture: Texture) {
     this.texture = texture;
-    this.img = img;
-    this.width = img.width;
-    this.height = img.height;
-  }
-  bindTexture(location: number, format?: number): void {
-    const gl = this.gl;
-    if(!format) format = gl.RGBA;
-    gl.activeTexture(WebGLConstants.TEXTURE0 + location);
-    gl.bindTexture(gl.TEXTURE_2D, this.texture);
-    gl.texImage2D(gl.TEXTURE_2D, 0, format, format, gl.UNSIGNED_BYTE, this.img);
-    gl.generateMipmap(gl.TEXTURE_2D);
+    this.width = texture.width;
+    this.height = texture.height;
   }
 
   addChildren(...children: DisplayObject[]): void {
@@ -48,6 +42,33 @@ export default class DisplayObject {
       this.children.delete(child);
       child.parent = undefined;
     });
+  }
+  updatePosition(time: number, delta: number): void {
+    const pX = this._velocity.x(time, delta);
+    const pY = this._velocity.y(time, delta);
+    if (this.inViewsight) {
+      if (this.left + pX > 0 && this.right + pX < this.inViewsight.width) {
+        this.x += this._velocity.x(time, delta);
+      } else {
+        if (this.inViewsight.destroy) this.parent && this.parent.removeChildren(this);
+      }
+      if (this.top + pY > 0 && this.bottom + pY < this.inViewsight.height) {
+        this.y += this._velocity.y(time, delta);
+      } else {
+        if (this.inViewsight.destroy) this.parent && this.parent.removeChildren(this);
+      }
+    } else {
+      this.x += this._velocity.x(time, delta);
+      this.y += this._velocity.y(time, delta);
+    }
+  }
+  set velocityX(v: number | ((t: number, d: number) => number)) {
+    if ("number" === typeof v) this._velocity.x = (t, d): number => d * v;
+    else this._velocity.x = v;
+  }
+  set velocityY(v: number | ((t: number, d: number) => number)) {
+    if ("number" === typeof v) this._velocity.y = (t, d): number => d * v;
+    else this._velocity.y = v;
   }
   get x(): number {
     return this.position.x;
@@ -64,42 +85,29 @@ export default class DisplayObject {
   get z(): number {
     return this.position.z;
   }
-  set z(z: number) {
-    this.position.z = z;
-  }
   get globalX(): number {
-    return this.parent && !this.absolute ? this.parent.globalX + this.position.x : this.position.x;
-  }
-  set globalX(v: number) {
-    if (this.parent && !this.absolute) {
-      this.position.x = v - this.parent.globalX;
-    }
-    else {
-      this.position.x = v;
-    }
+    return (this.parent && !this.absolute ? this.parent.globalX : 0) + this.position.x - this.width * this.scale * this.center.x;
   }
   get globalY(): number {
-    return this.parent && !this.absolute ? this.parent.globalY + this.position.y : this.position.y;
-  }
-  set globalY(v: number) {
-    if (this.parent && !this.absolute) {
-      this.position.y = v - this.parent.globalY;
-    }
-    else {
-      this.position.y = v;
-    }
+    return (this.parent && !this.absolute ? this.parent.globalY : 0) + this.position.y - this.height * this.scale * this.center.y;
   }
   //rect
   get left(): number {
-    return -this.width * this.center.x + this.globalX;
+    return this.globalX;
   }
   get right(): number {
-    return this.left + this.width;
+    return this.left + this.width * this.scale;
   }
   get top(): number {
-    return -this.height * this.center.y + this.globalY;
+    return this.globalY;
   }
   get bottom(): number {
-    return this.top + this.height;
+    return this.top + this.height * this.scale;
+  }
+  get centerPos(): {x: number; y: number} {
+    return {
+      x: this.left + this.width * this.scale / 2,
+      y: this.top + this.height * this.scale / 2,
+    };
   }
 }

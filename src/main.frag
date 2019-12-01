@@ -7,7 +7,7 @@ varying float v_TexIndex;
 
 vec4 getSamplerTexture() {
   int t = int(v_TexIndex);
-  for(int i = 0; i< %count%; i++) {
+  for(int i = 0; i<8; i++) {
     if(i==t) {
        return texture2D(u_Sampler[i], v_TexCoord);
     }

@@ -1,3 +1,12 @@
+export type Rect = {
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+};
+
+export type Tuple<T, L extends number> = { length: L } & [T, ...T[]];
+
 export function setAttribute(gl: WebGLRenderingContext, type: number, location: number, v: Float32Array | Array<number>): void {
   const mapper = {
     [gl.FLOAT](): void {
